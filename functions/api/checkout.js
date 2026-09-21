@@ -1,16 +1,16 @@
 async function saveOrder(env, order) {
-  // Try KV binding first (if configured via Cloudflare Pages settings)
+  // Try KV binding first
   if (env.ORDERS) {
     const id = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     await env.ORDERS.put(id, JSON.stringify({ ...order, id, createdAt: new Date().toISOString() }));
     return id;
   }
 
-  // Fallback: use KV namespace ID from env var and Cloudflare REST API
+  // Fallback: use KV namespace ID via Cloudflare REST API
   const namespaceId = env.KV_NAMESPACE_ID;
   const apiToken = env.CLOUDFLARE_API_TOKEN;
 
-  if (!namespaceId || !apiToken) {
+  if (!namespaceId || !apiToken || apiToken === 'set-your-api-token-here') {
     console.warn('KV storage not configured. Order not persisted.');
     return null;
   }
@@ -34,6 +34,21 @@ async function saveOrder(env, order) {
   }
 }
 
+function generateWhatsAppMessage(items, customer, total) {
+  const itemsList = items.map((i, index) => `${index + 1}. ${i.name} — ${i.price.toFixed(2)} €`).join('%0A');
+
+  return `Bonjour,%0A%0A` +
+    `Je souhaite passer une commande sur Ma Boutique.%0A%0A` +
+    `*Articles :*%0A${itemsList}%0A%0A` +
+    `*Total :* ${total.toFixed(2)} €%0A%0A` +
+    `*Mes informations :*%0A` +
+    `Nom : ${customer.firstName} ${customer.lastName}%0A` +
+    `Email : ${customer.email}%0A` +
+    `Téléphone : ${customer.phone}%0A` +
+    `Adresse : ${customer.address}, ${customer.zip} ${customer.city}%0A%0A` +
+    `Merci de confirmer ma commande.`;
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const body = await request.json();
@@ -43,66 +58,45 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: 'Panier vide' }), { status: 400 });
   }
 
-  if (!customer || !customer.email || !customer.firstName || !customer.lastName) {
+  if (!customer || !customer.email || !customer.firstName || !customer.lastName || !customer.phone) {
     return new Response(JSON.stringify({ error: 'Informations client incomplètes' }), { status: 400 });
   }
 
   const total = items.reduce((sum, item) => sum + (item.price || 0), 0);
-  const description = items.map(i => i.name).join(', ');
 
-  // Save order in KV regardless of payment method (demo or Stripe)
+  // Save order to KV
+  let orderId = null;
   try {
-    await saveOrder(env, { items, customer, total, status: 'pending' });
+    orderId = await saveOrder(env, { items, customer, total, status: 'pending', contactMethod: customer.contactMethod || 'whatsapp' });
   } catch (err) {
     console.error('Order save error:', err);
   }
 
-  const stripeSecret = env.STRIPE_SECRET_KEY;
+  // Get WhatsApp number from env
+  const whatsappNumber = env.WHATSAPP_NUMBER || '+22962794964';
+  const cleanNumber = whatsappNumber.replace(/\D/g, '');
+  const message = generateWhatsAppMessage(items, customer, total);
 
-  if (!stripeSecret) {
-    return new Response(JSON.stringify({
-      url: '/success.html',
-      mode: 'demo',
-      total,
-      items: description,
-      message: 'Paiement en mode démonstration. Ajoutez STRIPE_SECRET_KEY pour activer les vrais paiements.'
-    }));
-  }
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(request.headers.get('user-agent') || '');
+  const whatsappUrl = isMobile
+    ? `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${message}`
+    : `https://web.whatsapp.com/send?phone=${cleanNumber}&text=${message}`;
 
-  try {
-    const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${stripeSecret}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        payment_method_types: 'card',
-        mode: 'payment',
-        success_url: `${new URL(request.url).origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${new URL(request.url).origin}/cancel.html`,
-        customer_email: customer.email,
-        metadata: JSON.stringify({ customer: JSON.stringify(customer) }),
-        line_items: JSON.stringify(items.map(i => ({
-          price_data: {
-            currency: 'eur',
-            product_data: { name: i.name, description: i.desc },
-            unit_amount: Math.round(i.price * 100)
-          },
-          quantity: 1
-        })))
-      }).toString()
-    });
+  return new Response(JSON.stringify({
+    url: whatsappUrl,
+    mode: 'whatsapp',
+    orderId,
+    total,
+    message: 'Commande enregistrée. Redirection vers WhatsApp...'
+  }));
+}
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Stripe error');
+export async function onRequestOptions() {
+  return new Response(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
     }
-
-    const session = await response.json();
-    return new Response(JSON.stringify({ url: session.url, mode: 'live' }));
-  } catch (e) {
-    console.error('Stripe error:', e);
-    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
-  }
+  });
 }
