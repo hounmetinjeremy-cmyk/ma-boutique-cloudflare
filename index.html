@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma Boutique en Ligne</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>🛍 Ma Boutique</h1>
+    <button id="cart-toggle">🛒 Panier (<span id="cart-count">0</span>)</button>
+  </header>
+
+  <main>
+    <section id="products" class="products"></section>
+  </main>
+
+  <aside id="cart" class="cart hidden">
+    <div class="cart-header">
+      <h2>Votre Panier</h2>
+      <button id="cart-close">&times;</button>
+    </div>
+    <div id="cart-items"></div>
+    <div class="cart-footer">
+      <p>Total : <strong><span id="cart-total">0</span> €</strong></p>
+      <button id="checkout" class="btn-primary">Payer avec Stripe</button>
+    </div>
+  </aside>
+
+  <footer>
+    <p>&copy; 2026 Ma Boutique — Hébergé gratuitement sur <a href="https://pages.cloudflare.com" target="_blank">Cloudflare Pages</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
