@@ -3,24 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Commande confirmée | Ma Boutique</title>
+  <title>Commande envoyée | Ma Boutique</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
     <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-      <i class="fas fa-check text-4xl text-green-600"></i>
+      <i class="fab fa-whatsapp text-5xl text-green-600"></i>
     </div>
-    <h1 class="text-2xl font-bold text-gray-900 mb-4">Merci pour votre commande !</h1>
-    <p class="text-gray-600 mb-6">Votre commande a bien été enregistrée. Un email de confirmation vous sera envoyé prochainement.</p>
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Votre commande est prête !</h1>
+    <p class="text-gray-600 mb-6">Nous avons préparé votre message WhatsApp. Si l'application ne s'ouvre pas automatiquement, cliquez sur le bouton ci-dessous.</p>
     <div class="bg-gray-50 rounded-xl p-4 mb-6">
-      <p class="text-sm text-gray-500">Référence</p>
-      <p class="font-mono text-gray-900 font-semibold" id="ref">#CMD-<script>document.write(Date.now().toString().slice(-8))</script></p>
+      <p class="text-sm text-gray-500">Statut</p>
+      <p class="font-semibold text-gray-900">En attente de confirmation WhatsApp</p>
     </div>
-    <a href="/" class="inline-block w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all">
+    <a id="whatsapp-link" href="https://wa.me/22962794964" target="_blank" class="inline-block w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all mb-3">
+      <i class="fab fa-whatsapp mr-2"></i>Ouvrir WhatsApp
+    </a>
+    <a href="/" class="inline-block w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all">
       Retour à la boutique
     </a>
   </div>
+
+  <script>
+    const lastOrder = sessionStorage.getItem('lastOrder');
+    if (lastOrder) {
+      const order = JSON.parse(lastOrder);
+      const itemsList = order.items.map((i, index) => `${index + 1}. ${i.name} — ${i.price.toFixed(2)} EUR`).join('%0A');
+      const msg = `Bonjour,%0A%0AJe souhaite passer une commande sur Ma Boutique.%0A%0AArticles :%0A${itemsList}%0A%0ATotal : ${order.total.toFixed(2)} EUR%0A%0AMes informations :%0ANom : ${order.customer.firstName} ${order.customer.lastName}%0AEmail : ${order.customer.email}%0ATéléphone : ${order.customer.phone}%0AAdresse : ${order.customer.address}, ${order.customer.zip} ${order.customer.city}%0A%0AMerci de confirmer ma commande.`;
+      document.getElementById('whatsapp-link').href = `https://wa.me/22962794964?text=${msg}`;
+    }
+  </script>
 </body>
 </html>
