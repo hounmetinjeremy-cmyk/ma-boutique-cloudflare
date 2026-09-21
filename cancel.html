@@ -3,14 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Paiement Annulé</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Paiement annulé | Ma Boutique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-  <main style="text-align:center; padding:4rem 1rem;">
-    <h1>❌ Paiement annulé</h1>
-    <p>Vous avez annulé le processus de paiement. Votre panier est toujours disponible.</p>
-    <p><a href="/" class="btn-primary" style="display:inline-block; padding:0.75rem 1.5rem; margin-top:1rem;">Retour à la boutique</a></p>
-  </main>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+      <i class="fas fa-times text-4xl text-orange-600"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-4">Paiement annulé</h1>
+    <p class="text-gray-600 mb-6">Votre paiement n'a pas été finalisé. Votre panier est toujours disponible.</p>
+    <a href="/" class="inline-block w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all">
+      Retour à la boutique
+    </a>
+  </div>
 </body>
 </html>
