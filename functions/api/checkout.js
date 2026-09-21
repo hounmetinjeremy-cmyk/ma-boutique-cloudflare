@@ -1,9 +1,37 @@
 async function saveOrder(env, order) {
-  const kv = env.MA Boutique;
-  if (!kv) return null;
-  const id = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  await kv.put(id, JSON.stringify({ ...order, id, createdAt: new Date().toISOString() }));
-  return id;
+  // Try KV binding first (if configured via Cloudflare Pages settings)
+  if (env.ORDERS) {
+    const id = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    await env.ORDERS.put(id, JSON.stringify({ ...order, id, createdAt: new Date().toISOString() }));
+    return id;
+  }
+
+  // Fallback: use KV namespace ID from env var and Cloudflare REST API
+  const namespaceId = env.KV_NAMESPACE_ID;
+  const apiToken = env.CLOUDFLARE_API_TOKEN;
+
+  if (!namespaceId || !apiToken) {
+    console.warn('KV storage not configured. Order not persisted.');
+    return null;
+  }
+
+  try {
+    const id = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const value = JSON.stringify({ ...order, id, createdAt: new Date().toISOString() });
+    const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.ACCOUNT_ID || 'me'}/storage/kv/namespaces/${namespaceId}/values/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'text/plain'
+      },
+      body: value
+    });
+    if (!res.ok) throw new Error(`KV API error: ${res.status}`);
+    return id;
+  } catch (err) {
+    console.error('KV save error:', err);
+    return null;
+  }
 }
 
 export async function onRequestPost(context) {
@@ -26,7 +54,7 @@ export async function onRequestPost(context) {
   try {
     await saveOrder(env, { items, customer, total, status: 'pending' });
   } catch (err) {
-    console.error('KV save error:', err);
+    console.error('Order save error:', err);
   }
 
   const stripeSecret = env.STRIPE_SECRET_KEY;
