@@ -165,7 +165,6 @@ document.getElementById('checkout-close').onclick = () => {
   checkoutModal.classList.remove('flex');
 };
 
-// Close modal on outside click
 checkoutModal.onclick = (e) => {
   if (e.target === checkoutModal) {
     checkoutModal.classList.add('hidden');
@@ -179,7 +178,7 @@ function setLoading(loading) {
     submitBtn.innerHTML = '<div class="loading-spinner"></div> Traitement...';
   } else {
     submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="fab fa-stripe text-2xl"></i> Payer avec Stripe';
+    submitBtn.innerHTML = '<i class="fab fa-whatsapp text-2xl"></i> Commander via WhatsApp';
   }
 }
 
@@ -197,7 +196,8 @@ checkoutForm.onsubmit = async (e) => {
     phone: formData.get('phone'),
     address: formData.get('address'),
     city: formData.get('city'),
-    zip: formData.get('zip')
+    zip: formData.get('zip'),
+    contactMethod: formData.get('contactMethod') || 'whatsapp'
   };
 
   try {
@@ -209,23 +209,15 @@ checkoutForm.onsubmit = async (e) => {
     const data = await res.json();
 
     if (data.url) {
-      if (data.mode === 'demo') {
-        showToast('Mode démo : commande enregistrée sans paiement');
-        cart = [];
-        updateCart();
-        checkoutModal.classList.add('hidden');
-        checkoutModal.classList.remove('flex');
-        window.location.href = data.url;
-      } else {
-        window.location.href = data.url;
-      }
+      sessionStorage.setItem('lastOrder', JSON.stringify({ items: cart, customer, total: cart.reduce((sum, p) => sum + p.price, 0) }));
+      window.location.href = data.url;
     } else {
-      showToast(data.error || 'Erreur lors du paiement', 'error');
+      showToast(data.error || 'Erreur lors de la commande', 'error');
       setLoading(false);
     }
   } catch (err) {
     console.error(err);
-    showToast('Impossible de démarrer le paiement', 'error');
+    showToast('Impossible d\'envoyer la commande', 'error');
     setLoading(false);
   }
 };
