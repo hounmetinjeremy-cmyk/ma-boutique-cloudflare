@@ -74,7 +74,7 @@ ma-boutique-cloudflare/
 ├── index.html              # Page boutique
 ├── app.js                  # Logique frontend (panier, formulaire WhatsApp)
 ├── styles.css              # Styles personnalisés
-├── success.html            # Confirmation de commande
+├── success.html            # Confirmation + lien WhatsApp
 ├── cancel.html             # Commande annulée
 ├── admin.html              # Dashboard admin
 ├── functions/
